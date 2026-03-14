@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ashfire Ring — Third-person RPG</title>
+    <link rel="stylesheet" href="/src/rpg-ui.css" />
+  </head>
+  <body>
+    <div id="hud">
+      <div id="hint">Click to play — River valley &amp; Stoneford city · WASD · Space · Mouse · E · F bike</div>
+      <div id="bike-hint" class="hidden"></div>
+      <div id="quest-line"></div>
+      <div id="dialogue" class="hidden">
+        <p id="dialogue-text"></p>
+        <button type="button" id="dialogue-ok">Continue</button>
+      </div>
+    </div>
+    <div id="victory" class="hidden">
+      <h2>The ring is unmade</h2>
+      <p>Mount Tharen claims the Ashfire Ring. The shadow lifts.</p>
+      <button type="button" id="replay">Play again</button>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
