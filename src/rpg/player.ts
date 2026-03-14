@@ -2,17 +2,20 @@ import * as THREE from "three";
 import type { AABB } from "./colliders";
 import { intersectsPlayer } from "./colliders";
 
-/** Hobbit-sized hitbox (matches Frodo-style hero). */
-const PLAYER_W = 0.38;
-const PLAYER_H = 1.12;
+/** Human-sized hitbox (adult proportions). */
+const PLAYER_W = 0.44;
+const PLAYER_H = 1.72;
 const GRAVITY = 32;
-const JUMP = 9;
-const SPEED = 6.4;
-const CAM_DIST = 4.6;
-const CAM_MIN = 1.15;
-const CAM_Y = 1.05;
-const PITCH_MIN = 0.12;
-const PITCH_MAX = 1.25;
+const JUMP = 9.5;
+const SPEED = 6.8;
+const SPEED_BIKE = 16.5;
+const CAM_DIST = 5.2;
+const CAM_MIN = 1.35;
+const CAM_Y = 1.58;
+/** Full orbit: look almost straight up and down (radians). */
+const PITCH_MIN = -1.45;
+const PITCH_MAX = 1.45;
+const CAM_MIN_Y = 0.25;
 
 export class ThirdPersonPlayer {
   camera: THREE.PerspectiveCamera;
@@ -22,6 +25,8 @@ export class ThirdPersonPlayer {
   onGround = false;
   keys = new Set<string>();
   pointerLocked = false;
+  /** When true, use bike speed and no walk animation. */
+  riding = false;
 
   constructor(camera: THREE.PerspectiveCamera) {
     this.camera = camera;
@@ -104,8 +109,9 @@ export class ThirdPersonPlayer {
     if (this.keys.has("KeyS")) move.sub(forward);
     if (this.keys.has("KeyD")) move.add(right);
     if (this.keys.has("KeyA")) move.sub(right);
+    const speed = this.riding ? SPEED_BIKE : SPEED;
     if (move.lengthSq() > 0) {
-      move.normalize().multiplyScalar(SPEED);
+      move.normalize().multiplyScalar(speed);
       this.velocity.x = move.x;
       this.velocity.z = move.z;
     } else {
@@ -149,6 +155,7 @@ export class ThirdPersonPlayer {
     const bn = back.clone().normalize();
     const dist = this.camClear(focus, bn, back.length());
     this.camera.position.copy(focus).add(bn.multiplyScalar(dist));
+    if (this.camera.position.y < CAM_MIN_Y) this.camera.position.y = CAM_MIN_Y;
     this.camera.lookAt(focus);
   }
 
@@ -156,7 +163,7 @@ export class ThirdPersonPlayer {
     this.body.set(x, y, z);
     this.velocity.set(0, 0, 0);
     this.euler.y = 0;
-    this.euler.x = 0.4;
+    this.euler.x = 0.35;
   }
 
   bounds(): { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number } {

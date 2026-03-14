@@ -135,25 +135,27 @@ export function wheatField(
   g.rotation.y = rotY;
   const base = new THREE.Mesh(
     new THREE.PlaneGeometry(w, d),
-    new THREE.MeshLambertMaterial({ color: 0xc9b84a })
+    new THREE.MeshLambertMaterial({ color: 0x9a8240 })
   );
   base.rotation.x = -Math.PI / 2;
   base.position.y = 0.025;
   base.receiveShadow = true;
   g.add(base);
-  const n = Math.min(80, Math.floor((w * d) / 2));
-  const straw = new THREE.MeshLambertMaterial({ color: 0xd4c870 });
+  const n = Math.min(55, Math.floor((w * d) / 2.5));
+  const straw = new THREE.MeshLambertMaterial({ color: 0xb89850 });
+  const strawLight = new THREE.MeshLambertMaterial({ color: 0xc8a858 });
   for (let i = 0; i < n; i++) {
     const blade = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, 0.35 + rand() * 0.25, 0.04),
-      straw
+      new THREE.BoxGeometry(0.07, 0.4 + rand() * 0.2, 0.07),
+      i % 3 === 0 ? strawLight : straw
     );
     blade.position.set(
-      (rand() - 0.5) * w * 0.92,
-      0.2,
-      (rand() - 0.5) * d * 0.92
+      (rand() - 0.5) * w * 0.9,
+      0.22,
+      (rand() - 0.5) * d * 0.9
     );
-    blade.rotation.z = (rand() - 0.5) * 0.3;
+    blade.rotation.z = (rand() - 0.5) * 0.4;
+    blade.rotation.x = (rand() - 0.5) * 0.15;
     g.add(blade);
   }
   scene.add(g);
@@ -249,22 +251,36 @@ export function windmill(
 }
 
 export function hamletWell(scene: THREE.Scene, colliders: AABB[], x: number, z: number): void {
+  const stone = new THREE.MeshLambertMaterial({ color: 0x6a6862 });
   const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.75, 0.18, 8, 20),
-    new THREE.MeshLambertMaterial({ color: 0x7a7870 })
+    new THREE.TorusGeometry(0.78, 0.2, 12, 24),
+    stone
   );
   ring.rotation.x = Math.PI / 2;
-  ring.position.set(x, 0.28, z);
+  ring.position.set(x, 0.3, z);
   ring.castShadow = true;
   scene.add(ring);
   const water = new THREE.Mesh(
-    new THREE.CircleGeometry(0.62, 16),
-    new THREE.MeshLambertMaterial({ color: 0x3a6a90 })
+    new THREE.CircleGeometry(0.6, 20),
+    new THREE.MeshLambertMaterial({ color: 0x2a5a7a })
   );
   water.rotation.x = -Math.PI / 2;
-  water.position.set(x, 0.1, z);
+  water.position.set(x, 0.11, z);
   scene.add(water);
-  colliders.push(aabbFromBox(x, 0.35, z, 1, 0.4, 1));
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(0.9, 0.9, 8),
+    new THREE.MeshLambertMaterial({ color: 0x5c4033 })
+  );
+  roof.position.set(x, 0.95, z);
+  roof.castShadow = true;
+  scene.add(roof);
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.1, 0.7, 10),
+    new THREE.MeshLambertMaterial({ color: 0x4a3828 })
+  );
+  post.position.set(x, 0.5, z);
+  scene.add(post);
+  colliders.push(aabbFromBox(x, 0.4, z, 1.05, 0.5, 1.05));
 }
 
 export function arbor(

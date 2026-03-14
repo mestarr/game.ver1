@@ -1,16 +1,18 @@
 import * as THREE from "three";
 
-/** 1D ramp: hard light steps like hand-painted / cel games. */
+/** 1D ramp: bold 3-step cel shading (shadow / mid / highlight) — reads clearly, not flat. */
 export function makeToonGradientMap(): THREE.DataTexture {
   const c = document.createElement("canvas");
   c.width = 4;
   c.height = 1;
   const ctx = c.getContext("2d")!;
   const g = ctx.createLinearGradient(0, 0, 4, 0);
-  g.addColorStop(0, "#000000");
-  g.addColorStop(0.35, "#606060");
-  g.addColorStop(0.5, "#b0b0b0");
-  g.addColorStop(0.65, "#e8e8e8");
+  g.addColorStop(0, "#1a1a1a");
+  g.addColorStop(0.38, "#505050");
+  g.addColorStop(0.5, "#505050");
+  g.addColorStop(0.52, "#a0a0a0");
+  g.addColorStop(0.72, "#a0a0a0");
+  g.addColorStop(0.75, "#f0f0f0");
   g.addColorStop(1, "#ffffff");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 4, 1);
@@ -26,7 +28,7 @@ function bumpSaturation(color: THREE.Color, factor: number): THREE.Color {
   const hsl = { h: 0, s: 0, l: 0 };
   color.getHSL(hsl);
   hsl.s = Math.min(1, hsl.s * factor);
-  hsl.l = hsl.l * 0.92 + 0.08;
+  hsl.l = Math.max(0.15, Math.min(0.88, hsl.l * 0.95 + 0.06));
   const out = new THREE.Color();
   out.setHSL(hsl.h, hsl.s, hsl.l);
   return out;

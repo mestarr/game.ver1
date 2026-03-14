@@ -157,7 +157,7 @@ export function buildTree(
   const h = hScale;
 
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.25 * h, 0.4 * h, 2.2 * h, 8),
+    new THREE.CylinderGeometry(0.25 * h, 0.4 * h, 2.2 * h, 12),
     trunkMat.clone()
   );
   trunk.position.y = 1.1 * h;
@@ -170,7 +170,7 @@ export function buildTree(
   ];
   for (const L of layers) {
     const cone = new THREE.Mesh(
-      new THREE.ConeGeometry(L.r, 1.6 * h, 8),
+      new THREE.ConeGeometry(L.r, 1.6 * h, 12),
       L.mat.clone()
     );
     cone.position.y = L.y;
@@ -196,7 +196,7 @@ export function buildBush(
   for (let i = 0; i < 5; i++) {
     const r = (0.35 + Math.random() * 0.35) * s;
     const m = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 8, 6),
+      new THREE.SphereGeometry(r, 10, 8),
       mats[i % 3]!.clone()
     );
     m.position.set(
@@ -532,6 +532,177 @@ export function buildLantern(
   scene.add(light);
 }
 
+/** Wooden pier / dock over water. */
+export function buildDock(
+  scene: THREE.Scene,
+  colliders: AABB[],
+  x: number,
+  z: number,
+  length: number,
+  rotY: number
+): void {
+  const plankMat = new THREE.MeshLambertMaterial({ color: 0x6b5344 });
+  const postMat = new THREE.MeshLambertMaterial({ color: 0x4a3828 });
+  const n = Math.max(3, Math.floor(length / 2.5));
+  const step = length / n;
+  for (let i = 0; i <= n; i++) {
+    const tx = x + Math.sin(rotY) * i * step;
+    const tz = z + Math.cos(rotY) * i * step;
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.2, 1.2, 6),
+      postMat
+    );
+    post.position.set(tx, 0.6, tz);
+    post.castShadow = true;
+    scene.add(post);
+    colliders.push(aabbFromBox(tx, 0.6, tz, 0.2, 0.6, 0.2));
+  }
+  for (let i = 0; i < n; i++) {
+    const tx = x + Math.sin(rotY) * (i + 0.5) * step;
+    const tz = z + Math.cos(rotY) * (i + 0.5) * step;
+    const plank = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 0.12, step * 0.9),
+      plankMat
+    );
+    plank.position.set(tx, 0.12, tz);
+    plank.rotation.y = rotY;
+    plank.castShadow = true;
+    plank.receiveShadow = true;
+    scene.add(plank);
+  }
+  const midX = x + Math.sin(rotY) * (length / 2);
+  const midZ = z + Math.cos(rotY) * (length / 2);
+  colliders.push(aabbFromBox(midX, 0.15, midZ, 1.2, 0.15, length / 2 + 0.5));
+}
+
+/** Simple sailing ship: hull + mast + sail. */
+export function buildShip(
+  scene: THREE.Scene,
+  colliders: AABB[],
+  x: number,
+  z: number,
+  rotY: number,
+  scale = 1
+): void {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY;
+  const s = scale;
+  const hullMat = new THREE.MeshLambertMaterial({ color: 0x4a3828 });
+  const deckMat = new THREE.MeshLambertMaterial({ color: 0x6b5344 });
+  const mastMat = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
+  const sailMat = new THREE.MeshLambertMaterial({ color: 0xe8e4d8 });
+
+  const hull = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5 * s, 0.7 * s, 2.8 * s, 10, 1, false, 0, Math.PI * 0.85),
+    hullMat
+  );
+  hull.rotation.z = Math.PI / 2;
+  hull.position.set(0, 0.35 * s, 0);
+  g.add(hull);
+  const deck = new THREE.Mesh(
+    new THREE.BoxGeometry(2.6 * s, 0.12 * s, 1.2 * s),
+    deckMat
+  );
+  deck.position.set(0, 0.42 * s, 0);
+  g.add(deck);
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08 * s, 0.1 * s, 2.2 * s, 8),
+    mastMat
+  );
+  mast.position.set(0, 1.55 * s, 0);
+  g.add(mast);
+  const sail = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2 * s, 1.8 * s),
+    sailMat
+  );
+  sail.position.set(0, 1.6 * s, 0.3 * s);
+  sail.rotation.x = -0.15;
+  g.add(sail);
+  const cabin = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7 * s, 0.5 * s, 0.9 * s),
+    new THREE.MeshLambertMaterial({ color: 0x5c4033 })
+  );
+  cabin.position.set(-0.5 * s, 0.7 * s, 0);
+  g.add(cabin);
+  shadow(g);
+  scene.add(g);
+  colliders.push(aabbFromBox(x, 0.5 * s, z, 1.5 * s, 0.5 * s, 0.7 * s));
+}
+
+/** Enduro-style motorcycle (no collider — player drives it). */
+export function buildEnduroBike(): THREE.Group {
+  const g = new THREE.Group();
+  const frameMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
+  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+  const seatMat = new THREE.MeshLambertMaterial({ color: 0x3d2817 });
+  const chromeMat = new THREE.MeshLambertMaterial({ color: 0x6a6a72 });
+
+  const wheelR = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.38, 0.38, 0.14, 16),
+    wheelMat
+  );
+  wheelR.rotation.z = Math.PI / 2;
+  wheelR.position.set(0.55, 0.38, 0);
+  g.add(wheelR);
+  const wheelF = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.38, 0.38, 0.12, 16),
+    wheelMat
+  );
+  wheelF.rotation.z = Math.PI / 2;
+  wheelF.position.set(-0.6, 0.38, 0);
+  g.add(wheelF);
+
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(1.05, 0.12, 0.22),
+    frameMat
+  );
+  frame.position.set(0, 0.52, 0);
+  g.add(frame);
+  const tank = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.22, 0.5, 10, 1, false, 0, Math.PI),
+    new THREE.MeshLambertMaterial({ color: 0x4a3828 })
+  );
+  tank.rotation.z = Math.PI / 2;
+  tank.position.set(-0.15, 0.68, 0);
+  g.add(tank);
+  const seat = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.1, 0.35),
+    seatMat
+  );
+  seat.position.set(0.25, 0.6, 0);
+  g.add(seat);
+  const fork = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.5, 0.08),
+    chromeMat
+  );
+  fork.position.set(-0.6, 0.62, 0);
+  g.add(fork);
+  const bars = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.02, 0.7, 6),
+    chromeMat
+  );
+  bars.rotation.z = Math.PI / 2;
+  bars.position.set(-0.6, 0.88, 0);
+  g.add(bars);
+  const headlight = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.14, 0.06, 8),
+    new THREE.MeshLambertMaterial({ color: 0xe8e8e0, emissive: 0x444430, emissiveIntensity: 0.2 })
+  );
+  headlight.rotation.z = Math.PI / 2;
+  headlight.position.set(-0.72, 0.5, 0);
+  g.add(headlight);
+  const exhaust = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.06, 0.4, 6),
+    new THREE.MeshLambertMaterial({ color: 0x3a3a38 })
+  );
+  exhaust.rotation.z = Math.PI / 2;
+  exhaust.position.set(0.5, 0.45, -0.18);
+  g.add(exhaust);
+  shadow(g);
+  return g;
+}
+
 export function buildCampfire(scene: THREE.Scene, x: number, z: number): void {
   for (let i = 0; i < 5; i++) {
     const log = new THREE.Mesh(
@@ -685,7 +856,44 @@ export function buildRuinArch(
 
 const cobble = new THREE.MeshLambertMaterial({ color: 0x5a5a62 });
 const stoneWall = new THREE.MeshLambertMaterial({ color: 0x6a6868 });
+const stoneDark = new THREE.MeshLambertMaterial({ color: 0x5a5858 });
 const timber = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
+
+/** One fortress-style wall segment: tall base + battlements (merlons) on top. */
+function fortWallSegment(
+  scene: THREE.Scene,
+  colliders: AABB[],
+  wx: number,
+  wz: number,
+  ang: number,
+  segW: number,
+  segH: number,
+  segD: number
+): void {
+  const g = new THREE.Group();
+  g.position.set(wx, 0, wz);
+  g.rotation.y = ang + Math.PI / 2;
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(segW, segH, segD),
+    stoneWall.clone()
+  );
+  base.position.y = segH / 2;
+  base.castShadow = true;
+  g.add(base);
+  const merlonH = 0.95;
+  const merlonW = segW / 3.2;
+  for (let i = 0; i < 3; i++) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(merlonW, merlonH, segD * 1.05),
+      stoneDark.clone()
+    );
+    m.position.set((i - 1) * (segW * 0.36), segH + merlonH / 2, 0);
+    m.castShadow = true;
+    g.add(m);
+  }
+  scene.add(g);
+  colliders.push(aabbFromBox(wx, segH / 2 + 0.3, wz, segW / 2 + 0.1, segH / 2 + merlonH * 0.5, segD / 2 + 0.05));
+}
 const plaster = new THREE.MeshLambertMaterial({ color: 0xc8c0b8 });
 const slateRoof = new THREE.MeshLambertMaterial({ color: 0x3a4550 });
 const tileRoof = new THREE.MeshLambertMaterial({ color: 0x6b4040 });
@@ -866,6 +1074,214 @@ function marketStall(
   colliders.push(aabbFromBox(cx, 0.5, cz, 1.3, 0.55, 0.85));
 }
 
+/** Lighthouse: stone tower + lantern room + light. */
+export function buildLighthouse(
+  scene: THREE.Scene,
+  colliders: AABB[],
+  cx: number,
+  cz: number
+): void {
+  const towerH = 12;
+  const r = 1.4;
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(r * 0.92, r * 1.15, towerH, 12),
+    new THREE.MeshLambertMaterial({ color: 0xd8d4c8 })
+  );
+  body.position.set(cx, towerH / 2, cz);
+  body.castShadow = true;
+  scene.add(body);
+  const band = new THREE.Mesh(
+    new THREE.CylinderGeometry(r * 1.02, r * 1.02, 0.5, 12),
+    new THREE.MeshLambertMaterial({ color: 0x4a4540 })
+  );
+  band.position.set(cx, towerH - 0.8, cz);
+  scene.add(band);
+  const lanternRoom = new THREE.Mesh(
+    new THREE.CylinderGeometry(r * 1.2, r * 1.2, 1.8, 12),
+    new THREE.MeshLambertMaterial({ color: 0x3a4550 })
+  );
+  lanternRoom.position.set(cx, towerH + 0.9, cz);
+  lanternRoom.castShadow = true;
+  scene.add(lanternRoom);
+  const dome = new THREE.Mesh(
+    new THREE.ConeGeometry(r * 1.15, 1.2, 12),
+    new THREE.MeshLambertMaterial({ color: 0x5a3828 })
+  );
+  dome.position.set(cx, towerH + 2.4, cz);
+  dome.castShadow = true;
+  scene.add(dome);
+  const lamp = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 10, 8),
+    new THREE.MeshLambertMaterial({ color: 0xffeed8, emissive: 0xffaa44, emissiveIntensity: 0.5 })
+  );
+  lamp.position.set(cx, towerH + 1.5, cz);
+  scene.add(lamp);
+  const light = new THREE.PointLight(0xffdd99, 1.2, 28);
+  light.position.set(cx, towerH + 1.5, cz);
+  scene.add(light);
+  colliders.push(aabbFromBox(cx, towerH / 2, cz, r + 0.3, towerH / 2 + 1, r + 0.3));
+}
+
+/** Warehouse: large timber/stone building for goods. */
+export function buildWarehouse(
+  scene: THREE.Scene,
+  colliders: AABB[],
+  cx: number,
+  cz: number,
+  w: number,
+  d: number,
+  rotY: number
+): void {
+  const g = new THREE.Group();
+  g.position.set(cx, 0, cz);
+  g.rotation.y = rotY;
+  const h = 4.2;
+  const walls = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshLambertMaterial({ color: 0x6b5a4a })
+  );
+  walls.position.y = h / 2;
+  g.add(walls);
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(w + 0.4, 0.5, d + 0.4),
+    new THREE.MeshLambertMaterial({ color: 0x4a3828 })
+  );
+  roof.position.y = h + 0.25;
+  g.add(roof);
+  const door = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 2.8, 0.12),
+    new THREE.MeshLambertMaterial({ color: 0x3d2817 })
+  );
+  door.position.set(0, 1.5, d / 2 + 0.02);
+  g.add(door);
+  for (let i = 0; i < 4; i++) {
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.6, 0.06),
+      new THREE.MeshLambertMaterial({ color: 0x2a3540, emissive: 0x0a1018, emissiveIntensity: 0.1 })
+    );
+    win.position.set((i % 2) * 2.2 - 1.1, 2.2 + Math.floor(i / 2) * 1.2, d / 2 + 0.02);
+    g.add(win);
+  }
+  shadow(g);
+  scene.add(g);
+  colliders.push(aabbFromBox(cx, h / 2, cz, w / 2 + 0.2, h / 2 + 0.5, d / 2 + 0.2));
+}
+
+/**
+ * Seaside / harbor city: open to the sea (south), wall on land side, lighthouse, docks, warehouses, streets.
+ * cx, cz = center of town (plaza); sea is assumed to be toward negative z.
+ */
+export function buildSeasideCity(
+  scene: THREE.Scene,
+  colliders: AABB[],
+  cx: number,
+  cz: number,
+  rand: () => number
+): void {
+  const R = 42;
+  const cob = new THREE.Mesh(
+    new THREE.PlaneGeometry(R * 2.2, R * 1.9),
+    cobble.clone()
+  );
+  cob.rotation.x = -Math.PI / 2;
+  cob.position.set(cx, 0.022, cz);
+  cob.receiveShadow = true;
+  scene.add(cob);
+
+  const streetW = 5;
+  const mainStreet = new THREE.Mesh(
+    new THREE.PlaneGeometry(streetW, R * 1.7),
+    new THREE.MeshLambertMaterial({ color: 0x4a4848 })
+  );
+  mainStreet.rotation.x = -Math.PI / 2;
+  mainStreet.position.set(cx, 0.025, cz);
+  mainStreet.receiveShadow = true;
+  scene.add(mainStreet);
+  const crossStreet = new THREE.Mesh(
+    new THREE.PlaneGeometry(R * 1.6, streetW),
+    new THREE.MeshLambertMaterial({ color: 0x4a4848 })
+  );
+  crossStreet.rotation.x = -Math.PI / 2;
+  crossStreet.position.set(cx, 0.025, cz);
+  crossStreet.receiveShadow = true;
+  scene.add(crossStreet);
+
+  const wallH = 3.5;
+  const wallSegs = 22;
+  for (let i = 0; i < wallSegs; i++) {
+    const t = i / wallSegs;
+    const ang = Math.PI * 0.5 + t * Math.PI * 0.88;
+    const wx = cx + Math.cos(ang) * (R - 0.5);
+    const wz = cz + Math.sin(ang) * (R - 0.5);
+    if (Math.sin(ang) < 0.5) continue;
+    fortWallSegment(scene, colliders, wx, wz, ang, 2.7, wallH, 0.55);
+  }
+  cityTower(scene, colliders, cx - 6, cz + R - 2, 10, 1.3);
+  cityTower(scene, colliders, cx + 6, cz + R - 2, 10, 1.3);
+  const gateLintel = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 1, 1.3),
+    stoneWall.clone()
+  );
+  gateLintel.position.set(cx, 3.6, cz + R - 2.2);
+  gateLintel.castShadow = true;
+  scene.add(gateLintel);
+  const gatePillarL = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 3.6, 1.2),
+    stoneDark.clone()
+  );
+  gatePillarL.position.set(cx - 3.6, 1.8, cz + R - 2.2);
+  gatePillarL.castShadow = true;
+  scene.add(gatePillarL);
+  const gatePillarR = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 3.6, 1.2),
+    stoneDark.clone()
+  );
+  gatePillarR.position.set(cx + 3.6, 1.8, cz + R - 2.2);
+  gatePillarR.castShadow = true;
+  scene.add(gatePillarR);
+  colliders.push(aabbFromBox(cx, 3.6, cz + R - 2.2, 3.5, 0.55, 0.5));
+
+  buildLighthouse(scene, colliders, cx - R - 3, cz - 10);
+
+  buildWarehouse(scene, colliders, cx - 20, cz + 14, 9, 7, 0.15);
+  buildWarehouse(scene, colliders, cx + 18, cz + 16, 8, 6.5, -0.2);
+  buildWarehouse(scene, colliders, cx - 24, cz - 4, 7, 6, Math.PI / 2);
+  buildWarehouse(scene, colliders, cx + 22, cz + 2, 7.5, 5.5, -Math.PI / 2);
+  cityTownhouse(scene, colliders, cx - 26, cz - 8, 3.8, 4, 2, Math.PI / 2);
+  cityTownhouse(scene, colliders, cx + 24, cz - 10, 4, 4.2, 2, -Math.PI / 2);
+  cityShop(scene, colliders, cx - 14, cz - 18, 5.5, 4.5, 0);
+  cityShop(scene, colliders, cx + 12, cz - 16, 5.2, 4, 0.1);
+  cityTownhouse(scene, colliders, cx - 10, cz + 20, 4.2, 4.5, 2, Math.PI);
+  cityTownhouse(scene, colliders, cx + 14, cz + 16, 3.6, 4, 2, 0);
+  cityShop(scene, colliders, cx - 28, cz + 6, 5.5, 4, Math.PI / 2);
+  cityTownhouse(scene, colliders, cx + 26, cz + 4, 4, 3.8, 2, -Math.PI / 2);
+  cityTownhouse(scene, colliders, cx - 8, cz - 22, 4, 4.2, 2, 0);
+  cityTownhouse(scene, colliders, cx + 8, cz + 22, 4.2, 4, 2, Math.PI);
+  cityShop(scene, colliders, cx - 16, cz + 12, 5, 4.2, 0.2);
+  cityShop(scene, colliders, cx + 16, cz - 12, 5.2, 4.5, -0.15);
+  cityTownhouse(scene, colliders, cx - 22, cz + 2, 3.8, 4, 2, Math.PI / 2);
+  cityTownhouse(scene, colliders, cx + 20, cz - 4, 4, 4, 2, -Math.PI / 2);
+
+  cityWell(scene, colliders, cx, cz);
+
+  marketStall(scene, colliders, cx - 5, cz + 4, 0.3);
+  marketStall(scene, colliders, cx + 6, cz + 3, -0.2);
+  marketStall(scene, colliders, cx - 4, cz - 5, 1.2);
+  marketStall(scene, colliders, cx + 5, cz - 4, -1);
+  marketStall(scene, colliders, cx - 6, cz - 2, 0.8);
+  marketStall(scene, colliders, cx + 4, cz + 5, -0.5);
+
+  for (let i = 0; i < 14; i++) {
+    const ang = (i / 14) * Math.PI * 1.25 + 0.35;
+    const rr = R - 8 + rand() * 3;
+    buildLantern(scene, cx + Math.cos(ang) * rr, cz + Math.sin(ang) * rr, 0.4);
+  }
+  buildFlowerPatch(scene, cx + 10, cz + 8, rand);
+  buildFlowerPatch(scene, cx - 12, cz + 6, rand);
+  buildFlowerPatch(scene, cx - 8, cz - 10, rand);
+  buildFlowerPatch(scene, cx + 12, cz - 8, rand);
+}
+
 /**
  * Walled city: cobble district, cross streets, gate, many buildings.
  * cx, cz = city center (plaza).
@@ -877,9 +1293,9 @@ export function buildCity(
   cz: number,
   rand: () => number
 ): void {
-  const R = 34;
+  const R = 50;
   const cob = new THREE.Mesh(
-    new THREE.CircleGeometry(R, 48),
+    new THREE.CircleGeometry(R, 56),
     cobble.clone()
   );
   cob.rotation.x = -Math.PI / 2;
@@ -887,9 +1303,9 @@ export function buildCity(
   cob.receiveShadow = true;
   scene.add(cob);
 
-  const streetW = 5.5;
+  const streetW = 6;
   const ns = new THREE.Mesh(
-    new THREE.PlaneGeometry(streetW, R * 2 + 4),
+    new THREE.PlaneGeometry(streetW, R * 2 + 6),
     new THREE.MeshLambertMaterial({ color: 0x4a4848 })
   );
   ns.rotation.x = -Math.PI / 2;
@@ -897,7 +1313,7 @@ export function buildCity(
   ns.receiveShadow = true;
   scene.add(ns);
   const ew = new THREE.Mesh(
-    new THREE.PlaneGeometry(R * 2 + 4, streetW),
+    new THREE.PlaneGeometry(R * 2 + 6, streetW),
     new THREE.MeshLambertMaterial({ color: 0x4a4848 })
   );
   ew.rotation.x = -Math.PI / 2;
@@ -905,62 +1321,90 @@ export function buildCity(
   ew.receiveShadow = true;
   scene.add(ew);
 
-  const wallH = 2.8;
-  const wallT = 0.55;
-  const segments = 20;
+  const wallH = 3.9;
+  const wallT = 0.6;
+  const segments = 28;
   for (let i = 0; i < segments; i++) {
     const ang = (i / segments) * Math.PI * 2;
     const wx = cx + Math.cos(ang) * (R - 0.3);
     const wz = cz + Math.sin(ang) * (R - 0.3);
     if (Math.sin(ang) < -0.75 && Math.abs(Math.cos(ang)) < 0.35) continue;
-    const seg = new THREE.Mesh(
-      new THREE.BoxGeometry(2.8, wallH, wallT),
-      stoneWall.clone()
-    );
-    seg.position.set(wx, wallH / 2, wz);
-    seg.rotation.y = ang + Math.PI / 2;
-    seg.castShadow = true;
-    scene.add(seg);
-    colliders.push(aabbFromBox(wx, wallH / 2, wz, 1.25, wallH / 2, 0.45));
+    fortWallSegment(scene, colliders, wx, wz, ang, 2.9, wallH, wallT);
   }
 
-  cityTower(scene, colliders, cx - 5, cz + R - 2, 11, 1.5);
-  cityTower(scene, colliders, cx + 5, cz + R - 2, 11, 1.5);
+  cityTower(scene, colliders, cx - 6, cz + R - 2, 13, 1.55);
+  cityTower(scene, colliders, cx + 6, cz + R - 2, 13, 1.55);
+  cityTower(scene, colliders, cx - R + 3, cz - 8, 11, 1.35);
+  cityTower(scene, colliders, cx + R - 3, cz - 8, 11, 1.35);
+  cityTower(scene, colliders, cx - R + 3, cz + 10, 11, 1.35);
+  cityTower(scene, colliders, cx + R - 3, cz + 10, 11, 1.35);
   const gateLintel = new THREE.Mesh(
-    new THREE.BoxGeometry(9, 0.9, 1.4),
+    new THREE.BoxGeometry(10, 1.1, 1.6),
     stoneWall.clone()
   );
-  gateLintel.position.set(cx, 3.25, cz + R - 1.4);
+  gateLintel.position.set(cx, 4, cz + R - 1.4);
   gateLintel.castShadow = true;
   scene.add(gateLintel);
-  colliders.push(aabbFromBox(cx, 3.25, cz + R - 1.4, 4.2, 0.5, 0.5));
+  const gatePillarL = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 4.2, 1.4),
+    stoneDark.clone()
+  );
+  gatePillarL.position.set(cx - 4.2, 2.1, cz + R - 1.4);
+  gatePillarL.castShadow = true;
+  scene.add(gatePillarL);
+  const gatePillarR = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 4.2, 1.4),
+    stoneDark.clone()
+  );
+  gatePillarR.position.set(cx + 4.2, 2.1, cz + R - 1.4);
+  gatePillarR.castShadow = true;
+  scene.add(gatePillarR);
+  colliders.push(aabbFromBox(cx, 4, cz + R - 1.4, 4.5, 0.6, 0.5));
 
-  cityTownhouse(scene, colliders, cx - 16, cz + 12, 4, 4.5, 2, 0);
-  cityTownhouse(scene, colliders, cx + 14, cz + 14, 3.8, 4.2, 2, 0.1);
-  cityShop(scene, colliders, cx - 18, cz - 10, 6.5, 5, 0);
-  cityShop(scene, colliders, cx + 16, cz - 12, 5.5, 4.5, -0.15);
-  cityTownhouse(scene, colliders, cx - 14, cz - 16, 4.2, 4, 3, Math.PI / 2);
-  cityTownhouse(scene, colliders, cx + 12, cz + 18, 3.6, 4.8, 2, Math.PI);
-  cityTownhouse(scene, colliders, cx - 22, cz - 4, 4, 4, 2, Math.PI / 2);
-  cityShop(scene, colliders, cx + 20, cz + 6, 5, 4, Math.PI / 2);
-  cityTower(scene, colliders, cx - 24, cz + 4, 14, 1.35);
-  cityTownhouse(scene, colliders, cx + 8, cz - 22, 5, 4.5, 2, 0);
-  cityTownhouse(scene, colliders, cx - 8, cz + 22, 4.5, 4, 2, Math.PI);
+  cityTownhouse(scene, colliders, cx - 22, cz + 16, 4, 4.5, 2, 0);
+  cityTownhouse(scene, colliders, cx + 20, cz + 18, 3.8, 4.2, 2, 0.1);
+  cityShop(scene, colliders, cx - 26, cz - 14, 6.5, 5, 0);
+  cityShop(scene, colliders, cx + 24, cz - 16, 5.5, 4.5, -0.15);
+  cityTownhouse(scene, colliders, cx - 20, cz - 22, 4.2, 4, 3, Math.PI / 2);
+  cityTownhouse(scene, colliders, cx + 18, cz + 26, 3.6, 4.8, 2, Math.PI);
+  cityTownhouse(scene, colliders, cx - 30, cz - 6, 4, 4, 2, Math.PI / 2);
+  cityShop(scene, colliders, cx + 28, cz + 8, 5, 4, Math.PI / 2);
+  cityTower(scene, colliders, cx - 32, cz + 6, 15, 1.4);
+  cityTownhouse(scene, colliders, cx + 12, cz - 30, 5, 4.5, 2, 0);
+  cityTownhouse(scene, colliders, cx - 12, cz + 30, 4.5, 4, 2, Math.PI);
+  cityTownhouse(scene, colliders, cx - 28, cz + 12, 4, 4.2, 2, 0);
+  cityTownhouse(scene, colliders, cx + 26, cz - 10, 4.2, 4, 2, Math.PI / 2);
+  cityShop(scene, colliders, cx - 18, cz - 26, 6, 5, 0.1);
+  cityShop(scene, colliders, cx + 16, cz + 22, 5.5, 4.5, Math.PI);
+  cityTownhouse(scene, colliders, cx - 14, cz + 20, 4, 4.5, 2, Math.PI);
+  cityTownhouse(scene, colliders, cx + 14, cz - 20, 4.2, 4, 2, 0);
+  cityTownhouse(scene, colliders, cx - 24, cz - 16, 3.8, 4, 2, Math.PI / 2);
+  cityTownhouse(scene, colliders, cx + 22, cz + 14, 4, 4.2, 2, -Math.PI / 2);
+  cityShop(scene, colliders, cx - 10, cz + 28, 5.2, 4, Math.PI);
+  cityShop(scene, colliders, cx + 10, cz - 28, 5, 4.5, 0);
 
   cityWell(scene, colliders, cx, cz);
 
-  marketStall(scene, colliders, cx - 6, cz + 5, 0.4);
-  marketStall(scene, colliders, cx + 7, cz + 4, -0.3);
-  marketStall(scene, colliders, cx - 5, cz - 6, 2.2);
-  marketStall(scene, colliders, cx + 6, cz - 5, -2);
+  marketStall(scene, colliders, cx - 8, cz + 6, 0.4);
+  marketStall(scene, colliders, cx + 9, cz + 5, -0.3);
+  marketStall(scene, colliders, cx - 7, cz - 8, 2.2);
+  marketStall(scene, colliders, cx + 8, cz - 7, -2);
+  marketStall(scene, colliders, cx - 9, cz - 4, 0.6);
+  marketStall(scene, colliders, cx + 7, cz + 7, -0.8);
+  marketStall(scene, colliders, cx - 5, cz + 9, 1.2);
+  marketStall(scene, colliders, cx + 6, cz - 10, -1.5);
 
-  for (let i = 0; i < 10; i++) {
-    const ang = (i / 10) * Math.PI * 2;
-    const rr = R - 8 + rand() * 3;
+  for (let i = 0; i < 18; i++) {
+    const ang = (i / 18) * Math.PI * 2;
+    const rr = R - 10 + rand() * 4;
     buildLantern(scene, cx + Math.cos(ang) * rr, cz + Math.sin(ang) * rr, 0.35);
   }
 
-  buildFlowerPatch(scene, cx + 10, cz + 10, rand);
-  buildFlowerPatch(scene, cx - 12, cz + 8, rand);
+  buildFlowerPatch(scene, cx + 14, cz + 14, rand);
+  buildFlowerPatch(scene, cx - 16, cz + 12, rand);
+  buildFlowerPatch(scene, cx - 12, cz - 18, rand);
+  buildFlowerPatch(scene, cx + 14, cz - 14, rand);
+  buildFlowerPatch(scene, cx + 18, cz + 6, rand);
+  buildFlowerPatch(scene, cx - 18, cz - 8, rand);
 }
 

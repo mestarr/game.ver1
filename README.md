@@ -1,6 +1,6 @@
 # Ashfire Ring — Living world RPG
 
-A third-person fantasy map laid out like a **place you’d want to stay**: valley, river, hamlet, fields, city, elven woods, and a far eastern fire-mountain for the quest.
+A third-person fantasy map: valley, river, hamlet, **two fortress cities** (inland + seaside), elven woods, and a far eastern fire-mountain for the quest. Optional **enduro bike** for faster travel.
 
 ## Regions
 
@@ -9,11 +9,12 @@ A third-person fantasy map laid out like a **place you’d want to stay**: valle
 | **Greenhollow** (spawn) | Hobbit holes, cottages, **well**, **arbor**, **benches**, campfire, fences, flowers |
 | **West fields** | **Wheat**, **hay bales**, **windmill** |
 | **The Reach** (river) | Long **water** band, **sandy banks**, **three wooden bridges** |
-| **Stoneford** (north) | Walled **city** — plazas, wells, stalls, towers, lanterns |
+| **Stoneford** (north) | **Fortress city** — tall walls with battlements, gate towers, plazas, wells, stalls, lanterns |
 | **Silvervale** (east) | Elven glade, cottages, Lady Arweneth |
+| **Harbor city** (south) | **Seaside fortress** — walls, **lighthouse**, docks, **ships**, warehouses, market |
 | **Wild east** | Ruin arch, stumps, rocks — path to **Mount Tharen** (lava + pillar) |
 
-Mountains sit **only on the horizon** so the middle of the map stays open and calm.
+Mountains on the horizon; **bikes** near spawn, hamlet, and harbor.
 
 ## Run
 
@@ -22,16 +23,14 @@ npm install
 npm run dev
 ```
 
-**Spawn** is by the hamlet green (south of the river). Cross the bridges north into the city; east road to the elves; east again for the quest end.
+**Spawn** by the hamlet green. North across the bridges → Stoneford; south → harbor city & sea; east → elves, then Mount Tharen for the quest end.
 
-## Look (Borderlands-style, not Minecraft)
+## Look (Borderlands-style)
 
-- **Cel shading** (toon ramps) on almost everything  
-- **Black ink outlines** on props, buildings, character  
-- **Warmer sun + parchment horizon** sky  
-- **ACES tone map** — slightly richer, less flat  
-- Hero uses **smoother feet (capsules)** and higher-poly head  
+- **Cel shading** (toon ramps) and **black outlines** on props, buildings, character  
+- **Warmer sun + parchment horizon** sky, ACES tone mapping  
+- **Human hero** with walk animation (legs/arms); **fortress walls** with crenellations  
 
 ## Controls
 
-WASD · Space · Mouse · **E** talk / use at volcano
+WASD · Space · Mouse · **E** talk / use at volcano · **F** ride / get off bike (when near one)

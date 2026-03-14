@@ -34,6 +34,16 @@ body {
 #hint.hidden {
   opacity: 0;
 }
+#bike-hint {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px #000;
+}
+#bike-hint.hidden {
+  display: none;
+}
 #quest-line {
   margin-top: 10px;
   text-align: center;

@@ -22,6 +22,9 @@ import {
   buildSignpost,
   buildRuinArch,
   buildCity,
+  buildDock,
+  buildShip,
+  buildSeasideCity,
 } from "./assets";
 import {
   meadowDisc,
@@ -34,6 +37,7 @@ import {
   hamletWell,
   arbor,
 } from "./livingAssets";
+import { buildGamwiseMesh, buildArwenethMesh } from "./characters";
 
 export type Npc = {
   id: string;
@@ -62,7 +66,7 @@ export function buildWorld(scene: THREE.Scene): { colliders: AABB[]; npcs: Npc[]
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(400, 280),
-    new THREE.MeshLambertMaterial({ color: 0x2e5238 })
+    new THREE.MeshLambertMaterial({ color: 0x32583c })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -110,6 +114,12 @@ export function buildWorld(scene: THREE.Scene): { colliders: AABB[]; npcs: Npc[]
   for (let i = 0; i < 12; i++) {
     buildFlowerPatch(scene, -15 + rand() * 35, -32 + rand() * 18, rand);
   }
+  buildFlowerPatch(scene, 22, -18, rand);
+  buildFlowerPatch(scene, -28, -12, rand);
+  buildFlowerPatch(scene, 0, 25, rand);
+  buildBarrel(scene, colliders, 0, -20, 0.3);
+  buildCrate(scene, colliders, 8, -24, 0.4);
+  buildLantern(scene, -18, -10, 0.45);
 
   wheatField(scene, -48, -12, 22, 14, 0.15, rand);
   wheatField(scene, -52, 5, 18, 12, 0.1, rand);
@@ -143,7 +153,7 @@ export function buildWorld(scene: THREE.Scene): { colliders: AABB[]; npcs: Npc[]
     [138, -38],
   ]);
 
-  meadowDisc(scene, 0, 58, 38, 0x4d5850, 0.013);
+  meadowDisc(scene, 0, 58, 56, 0x4d5850, 0.013);
   buildCity(scene, colliders, 0, 58, rand);
 
   buildSignpost(scene, colliders, 8, -8, 0.2);
@@ -163,27 +173,92 @@ export function buildWorld(scene: THREE.Scene): { colliders: AABB[]; npcs: Npc[]
   }
   buildFlowerPatch(scene, 80, -14, rand);
   buildFlowerPatch(scene, 88, 6, rand);
+  buildFlowerPatch(scene, 100, -8, rand);
+  buildBarrel(scene, colliders, 90, -10, 0.2);
+  buildCrate(scene, colliders, 76, -16, 0.5);
+  buildLantern(scene, 92, 0, 0.4);
+  buildCampfire(scene, 70, -22);
 
   buildLake(scene, colliders, -32, -38, 14, rand);
   buildLake(scene, colliders, 38, 8, 11, rand);
   buildLake(scene, colliders, -55, 35, 10, rand);
 
+  // ——— Seaside (south): sea, harbor city, docks, ships ———
+  const sea = new THREE.Mesh(
+    new THREE.PlaneGeometry(420, 55),
+    new THREE.MeshPhongMaterial({
+      color: 0x1a4a7a,
+      emissive: 0x0a2038,
+      emissiveIntensity: 0.08,
+      shininess: 120,
+      transparent: true,
+      opacity: 0.96,
+      depthWrite: false,
+    })
+  );
+  sea.rotation.x = -Math.PI / 2;
+  sea.position.set(0, 0.042, -117);
+  sea.renderOrder = 0;
+  scene.add(sea);
+
+  meadowDisc(scene, -60, -88, 50, 0x3a5a50, 0.012);
+  buildSeasideCity(scene, colliders, -60, -88, rand);
+
+  buildDock(scene, colliders, -72, -98, 16, 0.08);
+  buildDock(scene, colliders, -48, -100, 12, -0.05);
+  buildDock(scene, colliders, -60, -102, 10, Math.PI / 2);
+  buildShip(scene, colliders, -72, -108, 0.2, 1.1);
+  buildShip(scene, colliders, -88, -104, 0.75, 0.95);
+  buildShip(scene, colliders, -52, -106, -0.25, 0.9);
+  buildShip(scene, colliders, -60, -110, 0.5, 0.85);
+  buildBarrel(scene, colliders, -76, -97, 0.4);
+  buildBarrel(scene, colliders, -66, -99, 0.6);
+  buildBarrel(scene, colliders, -54, -98, 0.3);
+  buildCrate(scene, colliders, -70, -99, 0.5);
+  buildCrate(scene, colliders, -50, -100, 0.45);
+  buildLantern(scene, -72, -96, 0.5);
+  buildLantern(scene, -48, -98, 0.45);
+
+  buildDirtPath(scene, [[-45, -25], [-55, -50], [-60, -75], [-60, -88]], 3);
+  buildDirtPath(scene, [[-60, -88], [-72, -95], [-72, -98]], 2.5);
+  buildDirtPath(scene, [[-60, -88], [-48, -94], [-48, -98]], 2.5);
+  buildSignpost(scene, colliders, -55, -62, 0.1);
+  for (let i = 0; i < 6; i++) {
+    const x = -90 + rand() * 25;
+    const z = -75 + rand() * 15;
+    if (Math.hypot(x + 60, z + 88) < 24) continue;
+    buildBush(scene, colliders, x, z, 0.5);
+  }
+
   for (let i = 0; i < 26; i++) {
     const x = 28 + rand() * 45;
     const z = -35 + rand() * 50;
     if (Math.hypot(x - 82, z + 8) < 20) continue;
-    if (Math.hypot(x, z - 58) < 38) continue;
+    if (Math.hypot(x, z - 58) < 54) continue;
     if (rand() > 0.4) buildTree(scene, colliders, x, z, 0.55 + rand() * 0.4);
     else buildBroadleafTree(scene, colliders, x, z, rand);
   }
-  for (let i = 0; i < 35; i++) {
+  for (let i = 0; i < 45; i++) {
     const x = (rand() - 0.3) * 120 - 30;
     const z = (rand() - 0.5) * 100;
     if (Math.hypot(x + 5, z + 18) < 25) continue;
-    if (Math.hypot(x, z - 58) < 36) continue;
+    if (Math.hypot(x, z - 58) < 52) continue;
     if (Math.abs(z - 22) < 8 && x > -100 && x < 100) continue;
     buildBush(scene, colliders, x, z, 0.55 + rand() * 0.5);
   }
+  for (let i = 0; i < 18; i++) {
+    const x = -30 + rand() * 90;
+    const z = -50 + rand() * 45;
+    if (Math.hypot(x + 5, z + 18) < 22) continue;
+    if (Math.hypot(x - 82, z + 8) < 22) continue;
+    if (Math.abs(z - 22) < 6 && x > -50 && x < 60) continue;
+    buildTree(scene, colliders, x, z, 0.5 + rand() * 0.45);
+  }
+  for (let i = 0; i < 10; i++) {
+    buildFlowerPatch(scene, -20 + rand() * 70, -45 + rand() * 55, rand);
+  }
+  buildSignpost(scene, colliders, -55, -55, 0.1);
+  buildSignpost(scene, colliders, 25, 35, -0.15);
 
   const peaks: Array<[number, number, number]> = [
     [-150, -70, 111],
@@ -195,6 +270,19 @@ export function buildWorld(scene: THREE.Scene): { colliders: AABB[]; npcs: Npc[]
     [50, -115, 717],
     [-55, 105, 818],
     [125, 95, 919],
+    [-165, -90, 1011],
+    [-170, -50, 1022],
+    [-158, -110, 1033],
+    [-140, -125, 1044],
+    [-95, -118, 1055],
+    [-75, -105, 1066],
+    [170, 50, 1077],
+    [165, -50, 1088],
+    [150, -100, 1099],
+    [-60, 120, 1100],
+    [60, 115, 1111],
+    [-130, 70, 1122],
+    [140, 0, 1133],
   ];
   for (const [mx, mz, sd] of peaks) {
     buildMountain(scene, colliders, mx, mz, sd);
@@ -266,56 +354,20 @@ export function buildWorld(scene: THREE.Scene): { colliders: AABB[]; npcs: Npc[]
     );
   }
 
-  function makeNpc(id: string, x: number, z: number, kind: "gamwise" | "elf"): Npc {
-    const g = new THREE.Group();
-    const scale = kind === "gamwise" ? 0.92 : 1.05;
-    const skin = new THREE.MeshLambertMaterial({ color: 0xd4c4a8 });
-    if (kind === "gamwise") {
-      const vest = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.36 * scale, 0.42 * scale, 0.95 * scale, 10),
-        new THREE.MeshLambertMaterial({ color: 0x5c4a38 })
-      );
-      vest.position.y = 0.52 * scale;
-      vest.castShadow = true;
-      g.add(vest);
-      const cloak = new THREE.Mesh(
-        new THREE.ConeGeometry(0.55 * scale, 0.7 * scale, 8, 1, true),
-        new THREE.MeshLambertMaterial({ color: 0x3d4a32, side: THREE.DoubleSide })
-      );
-      cloak.rotation.x = Math.PI;
-      cloak.position.set(0, 0.55 * scale, -0.12);
-      g.add(cloak);
-    } else {
-      const gown = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.32 * scale, 0.5 * scale, 1.25 * scale, 12),
-        new THREE.MeshLambertMaterial({ color: 0xe8e0d8 })
-      );
-      gown.position.y = 0.62 * scale;
-      gown.castShadow = true;
-      g.add(gown);
-      const sash = new THREE.Mesh(
-        new THREE.TorusGeometry(0.38 * scale, 0.06, 6, 16),
-        new THREE.MeshLambertMaterial({ color: 0xc9a227 })
-      );
-      sash.rotation.x = Math.PI / 2;
-      sash.position.y = 0.85 * scale;
-      g.add(sash);
-    }
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.27 * scale, 10, 8),
-      skin
-    );
-    head.position.y = 1.18 * scale;
-    head.castShadow = true;
-    g.add(head);
-    g.position.set(x, 0, z);
-    scene.add(g);
-    return { id, x, z, mesh: g, interactRadius: 3.2 };
+  function makeNpc(
+    id: string,
+    x: number,
+    z: number,
+    mesh: THREE.Group
+  ): Npc {
+    mesh.position.set(x, 0, z);
+    scene.add(mesh);
+    return { id, x, z, mesh, interactRadius: 3.2 };
   }
 
   const npcs: Npc[] = [
-    makeNpc("gamwise", 8, -14, "gamwise"),
-    makeNpc("arweneth", 80, -6, "elf"),
+    makeNpc("gamwise", 8, -14, buildGamwiseMesh()),
+    makeNpc("arweneth", 80, -6, buildArwenethMesh()),
   ];
 
   colliders.push(aabbFromBox(0, -2, 0, 220, 2, 220));

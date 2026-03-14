@@ -8,7 +8,8 @@ import { buildWorld, type Npc } from "./rpg/world";
 import type { QuestState } from "./rpg/quests";
 import { questHint } from "./rpg/quests";
 import "./rpg-ui.css";
-import { buildHobbitHero } from "./rpg/hero";
+import { buildHobbitHero, updateHeroWalk } from "./rpg/hero";
+import { buildEnduroBike } from "./rpg/assets";
 import {
   applyCelShading,
   meshesForOutline,
@@ -34,7 +35,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.12;
 document.body.appendChild(renderer.domElement);
 
 const hemi = new THREE.HemisphereLight(0xe8f0ff, 0x8a6a48, 0.48);
@@ -69,9 +70,9 @@ const outlinePass = new OutlinePass(
   camera,
   outlineObjects
 );
-outlinePass.edgeStrength = 3.2;
-outlinePass.edgeGlow = 0.08;
-outlinePass.edgeThickness = 1.35;
+outlinePass.edgeStrength = 4.2;
+outlinePass.edgeGlow = 0.12;
+outlinePass.edgeThickness = 1.6;
 outlinePass.visibleEdgeColor.set(0x000000);
 outlinePass.hiddenEdgeColor.set(0x000000);
 outlinePass.pulsePeriod = 0;
@@ -85,6 +86,63 @@ player.spawn(-4, 0, -16);
 const hero = buildHobbitHero();
 scene.add(hero);
 applyCelShading(hero);
+
+const BIKE_MOUNT_DIST = 3.5;
+interface BikeSpot {
+  mesh: THREE.Group;
+  x: number;
+  z: number;
+}
+const bikes: BikeSpot[] = [
+  { mesh: buildEnduroBike(), x: -8, z: -14 },
+  { mesh: buildEnduroBike(), x: 12, z: -20 },
+  { mesh: buildEnduroBike(), x: -65, z: -70 },
+];
+bikes.forEach((b) => {
+  b.mesh.position.set(b.x, 0, b.z);
+  scene.add(b.mesh);
+  applyCelShading(b.mesh);
+});
+let mountedBikeIndex: number | null = null;
+const bikeHintEl = document.getElementById("bike-hint")!;
+
+function nearestBike(): number | null {
+  if (mountedBikeIndex !== null) return null;
+  let best: number | null = null;
+  let bestD = BIKE_MOUNT_DIST + 1;
+  for (let i = 0; i < bikes.length; i++) {
+    const d = Math.hypot(bikes[i].x - player.body.x, bikes[i].z - player.body.z);
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+let fDown = false;
+window.addEventListener("keydown", (e) => {
+  if (e.code !== "KeyF" || fDown) return;
+  fDown = true;
+  if (mountedBikeIndex !== null) {
+    bikes[mountedBikeIndex].x = player.body.x;
+    bikes[mountedBikeIndex].z = player.body.z;
+    player.riding = false;
+    mountedBikeIndex = null;
+    bikeHintEl.classList.add("hidden");
+  } else {
+    const idx = nearestBike();
+    if (idx !== null) {
+      mountedBikeIndex = idx;
+      player.riding = true;
+      bikeHintEl.textContent = "F — Get off bike";
+      bikeHintEl.classList.remove("hidden");
+    }
+  }
+});
+window.addEventListener("keyup", (e) => {
+  if (e.code === "KeyF") fDown = false;
+});
 
 const quest: QuestState = {
   stage: "find_gamwise",
@@ -203,6 +261,36 @@ function tick(): void {
   player.update(dt);
   hero.position.set(player.body.x, player.body.y, player.body.z);
   hero.rotation.y = player.euler.y;
+  if (player.riding) {
+    hero.visible = false;
+    if (mountedBikeIndex !== null) {
+      const b = bikes[mountedBikeIndex];
+      b.mesh.position.set(player.body.x, player.body.y, player.body.z);
+      b.mesh.rotation.y = player.euler.y;
+      b.x = player.body.x;
+      b.z = player.body.z;
+    }
+    bikeHintEl.textContent = "F — Get off bike";
+    bikeHintEl.classList.remove("hidden");
+  } else {
+    hero.visible = true;
+    updateHeroWalk(hero, dt, player.velocity, player.onGround);
+    if (mountedBikeIndex === null) {
+      const idx = nearestBike();
+      if (idx !== null) {
+        bikeHintEl.textContent = "F — Ride bike";
+        bikeHintEl.classList.remove("hidden");
+      } else {
+        bikeHintEl.classList.add("hidden");
+      }
+    }
+  }
+  bikes.forEach((b, i) => {
+    if (i !== mountedBikeIndex) {
+      b.mesh.position.set(b.x, 0, b.z);
+      b.mesh.rotation.y = 0;
+    }
+  });
   composer.render();
 }
 tick();
